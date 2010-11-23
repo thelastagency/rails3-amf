@@ -6,7 +6,7 @@ class ActiveRecordPopulator
    end
 
   def populate obj, props, dynamic_props
-    obj.each_pair{|key, value| VoUtil.set_value(obj, key, value)}
+    props.each_pair{|key, value| VoUtil.set_value(obj, key, value)}
     VoUtil.finalize_object(obj)
     obj
   end
