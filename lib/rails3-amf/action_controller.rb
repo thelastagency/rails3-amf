@@ -6,6 +6,10 @@ Mime::Type.register "application/x-amf", :amf
 module ActionController
   Base.class_eval do
     attr_accessor :rubyamf_params # this way they can always access the rubyamf_params
+    
+    def is_amf
+      request.format("") == Mime::AMF
+    end
   end
 
   module Renderers
