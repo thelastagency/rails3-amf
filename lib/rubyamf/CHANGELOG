@@ -1,0 +1,59 @@
+--changes 0.0.1
+* Overview of changes
+    - Only minor backwards compatible changes made in legacy RubyAMF classes configuration.rb and vo_helper.rb.
+    - No changes to RocketAMF required. Completely ports legacy mapping to work with RocketAMF and allows using
+      full new in model and/or rubyamf_config.rb mappings to register RocketAMF mappings and RubyAMF mappings and
+      allows Rails 3 serialization options :only, :exclude, :method and :include as well as all the legacy options.
+    - Minor changes to rails3-amf classes to load rubyamf_config.rb and to simplify using options when rendering
+      to amf in the render block and to use legacy parameter mapping functionality.
+    - Ported legacy functionality by opening RubyAMF::Configuration::ClassMappings and extending base functionality
+      and then accessing it in RocketAMF populators.
+    - Implemented in model mapping.
+
+* Modified rails3-amf/action_controller.rb to pass rendering options to to_amf method.
+    - Allows for both legacy RubyAMF :class_mapping_scope to be set as an option as well as allowing for passing
+      RocketAMF rendering options without directly calling to_amf on the rendered object in the render block.
+
+* Modified rails3-amf/railties.rb to load RubyAMF legacy mapping and ../config/rubyamf_config.rb and to override
+  RocketAMF::Serializer.write_array if ClassMapping.use_array_collection = true and mapped a Rails 3 version of
+  FaultObject that is an extension of RocketAMF::Messages::ErrorMessage to use as a utility.
+
+* Modified legacy app/configuration.rb version dependent.
+    - Made require and include statements conditional based on version.
+
+* Modified legacy util/vo_helper to be version dependent.
+    - Made require and include statements conditional based on version.
+
+* Added new functionality to rubyamf_config.rb
+    - Added new mapping options including:
+        1. :as as a valid option for mapping the actionscript class instead of :actionscript for RocketAMF
+           compatibility.
+        2. :populator to specify a custom populator to load for deserializing custom classes.
+    - Ability to register class mappings in the model and load them using ClassMappings.register_by_class_names.
+    - Added scoped Rails 3 serialization options :only, :except and :include as alternatives to :attributes and
+      :associations in maps.
+
+* Opened ActiveRecord::Base and ActiveResource::Base to add a register_amf class method that allows all mappings
+  to be implemented in the model instead of rubyamf_config.rb. Custom ruby classes can extend
+  RubyAMF::Configuration::Registration to utilize this functionality as well.
+
+* Created rails3_configuration.rb which opens the legacy RubyAMF::Configuration::ClassMappings class:
+    - Updated the register method to register mappings in RocketAMF so that deserialization utilizes default
+      RocketAMF functionality.
+        1. Allows using rubyamf_config.rb to register RocketAMF mappings.
+        2. Adds populators to RocketAMF::ClassMapper.object_populators that utilize RubyAMF mappings to deserialize
+           ActiveRecord, ActiveResource, and custom ruby classes that map a custom polulator and extend
+           RubyAMF::Configuration::Registration.
+    - Added register_by_class_names method to load registrations in mapping.
+
+* Created RubyAMF::Populators::ActiveRecordPopulator that contains functionality to both deserialize and serialize
+  ActiveRecord objects using legacy RubyAMF functionality and mapping.
+
+* Created RubyAMF::Populators::ActiveResourcePopulator that contains functionality to both deserialize and serialize
+  ActiveResource objects using legacy RubyAMF functionality and mapping.
+
+* Created FaultObject utility class.
+
+* Created array_collection_serialiser which overrides RocketAMF::Serializer.write_array so that if use_array_collections
+  is true in the mappings all arrays serialize as ArrayCollections. It is only loaded if use_array_collections is true
+  so there is no impact on default RocketAMF serialization performance.

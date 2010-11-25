@@ -1,0 +1,16 @@
+* Optimize deserialization ActiveRecord and ActiveResource in populators to utilize RubyAMF mapping without
+  vo_helper.
+
+* Get rid of register_by_class_names in favor of application initialization automatically registering classes that
+  call the register_amf method in them?
+
+* Combine legacy files and set up so that legacy RubyAMF loads as a plugin and Rails 3 as a gem and use version
+  checking to throw errors if not implemented that way.
+
+* Update request logging with legacy response time strings.
+
+* Implement use_ruby_datetime mapping.
+
+* Implement legacy parameter mapping to params hash.
+
+* Error handling combined?
