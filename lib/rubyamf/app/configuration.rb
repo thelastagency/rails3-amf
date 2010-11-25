@@ -1,6 +1,6 @@
 #This stores supporting configuration classes used in the config file to register class mappings and parameter mappings etc.
-#fosrias require 'app/request_store'
-#fosrias require 'exception/rubyamf_exception'
+require 'app/request_store' if Rails::VERSION::MAJOR < 3 #fosrias backward compatibility
+require 'exception/rubyamf_exception' if Rails::VERSION::MAJOR < 3 #fosrias backward compatibility
 module RubyAMF
   module Configuration
     #ClassMappings configuration support class
@@ -26,8 +26,8 @@ module RubyAMF
       # - http://sporkmonger.com/2007/2/19/instance-variables-class-variables-and-inheritance-in-ruby      
      
       class << self           
-        #fosrias include RubyAMF::App
-        #fosrias include RubyAMF::Exceptions
+        include RubyAMF::App if Rails::VERSION::MAJOR < 3 #fosrias backward compatibility
+        include RubyAMF::Exceptions if Rails::VERSION::MAJOR < 3 #fosrias backward compatibility
         
         attr_accessor :ignore_fields, :use_array_collection, :default_mapping_scope, :force_active_record_ids, :attribute_names, :capture_incoming_amf,
           :use_ruby_date_time, :current_mapping_scope, :check_for_associations, :translate_case, :assume_types, :hash_key_access  #the rails parameter mapping type
@@ -60,12 +60,12 @@ module RubyAMF
             raise unless ARGV.include?("migrate") or ARGV.include?("db:migrate") or ARGV.include?("rollback") or ARGV.include?("db:rollback")
           end
         end
-
+        
         def get_vo_mapping_for_ruby_class(ruby_class)
           return unless scoped_class_mapping = @scoped_class_mappings_by_ruby_class[ruby_class] # just in case they didnt specify a ClassMapping for this Ruby Class
           scoped_class_mapping[@current_mapping_scope] ||= (if vo_mapping = @class_mappings_by_ruby_class[ruby_class]
               vo_mapping = vo_mapping.dup # need to duplicate it or else we will overwrite the keys from the original mappings
-              vo_mapping[:attributes]   = vo_mapping[:attributes][@current_mapping_scope]||[]   if vo_mapping[:attributes].is_a?(Hash)      # don't include any of these attributes if there is no scope
+              vo_mapping[:attributes]   = vo_mapping[:attributes][@current_mapping_scope]||[]   if vo_mapping[:attributes].is_a?(Hash)   # don't include any of these attributes if there is no scope
               vo_mapping[:associations] = vo_mapping[:associations][@current_mapping_scope]||[] if vo_mapping[:associations].is_a?(Hash) # don't include any of these attributes
               vo_mapping
             end
