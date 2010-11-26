@@ -1,6 +1,7 @@
 require 'rubyamf/rails3/rails3_configuration'
 require 'rubyamf/util/vo_helper'
 
+# Fully implements legacy mapping functionality. Likely rebuilding this will lead to better deserialization.
 module RubyAMF
   module Populator
     class Base

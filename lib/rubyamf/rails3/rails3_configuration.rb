@@ -124,8 +124,10 @@ module RubyAMF
         end
 
         # Legacy functionality translated for Rails 3 serializable_hash serialization functionality. Might get
-        # a slight performance kick by using an if statement to check if :only specified, but could run in to
-        # scoping issues.
+        # a slight performance kick by using an if statement to check if :only specified vs. :exclude, but could run in
+        # to scoping issues where some scope excludes some included attribute. Also, would be easy to add scoping
+        # to methods, but at the cost of an extra set of steps below and I am not sure of the benefit at the
+        # expense.
         def get_vo_mapping_for_ruby_class(ruby_class)
           return unless scoped_class_mapping = @scoped_class_mappings_by_ruby_class[ruby_class] # just in case they didnt specify a ClassMapping for this Ruby Class
           scoped_class_mapping[@current_mapping_scope] ||= (if vo_mapping = @class_mappings_by_ruby_class[ruby_class]
@@ -142,7 +144,7 @@ module RubyAMF
   end
 end
 
-# Add ability to map in the models. Philosophical question: add this to Object?
+# Add ability to map in the models.
 module ActiveRecord
   Base.class_eval do
     extend RubyAMF::Configuration::Registration

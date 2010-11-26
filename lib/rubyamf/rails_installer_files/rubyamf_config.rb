@@ -89,7 +89,7 @@ module RubyAMF
     # it will not have a scope to use and will not add any attributes or associations (whichever it cant match) to that association.
     # ClassMappings.default_mapping_scope = :viewing
     #
-    # You can place mappings in a model as follows (if you do, don't map them here)':
+    # You can place mappings in a model as follows (if you do, don't map them here):
     #
     # class MyModel < ActiveRecord::Base
     #
