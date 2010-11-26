@@ -16,71 +16,72 @@ module Rails3AMF
     #
     # If not serialized to an intermediate form before it reaches the AMF
     # serializer, it will be serialized with the default options.
+    #
+    # If options are set, other than scope, they override all mappings.
     def to_amf options=nil
-      options ||= {}
 
       # Remove associations so that we can call to_amf on them separately
-      include_associations = options.delete(:include) if options[:include]
+      include_associations = options.delete(:include) unless options.nil?
 
-      # Get the class name for accessing mapping functionality
-      class_name = self.class.name
+      # Apply mappings to object.
+      if ClassMappings.use_mapped_serialization_for_ruby_class(class_name = self.class.name)
 
-      # Using ClassMappings.assume_types or if if no attribute, method or association mappings are set,
-      # mapped serialization is skipped.
-      if ClassMappings.use_mapped_serialization_for_ruby_class(class_name)
+        # If any options other than scope are specified, we skip any mapping for them and defer to those options.
+        # We let classes that normally would be mapped take the performance hit on serialization over those that
+        # specify no mapping options other than :as or :actionscript and :ruby classes so that they map the fastest.
+        # This is a philosophical question, but the base is fastest performance for the least constricted objects.
+        unless include_associations || options[:only] || options[:except] || options[:methods]
 
-        # Retrieve map, which contains scoped attributes and associations
-        map = ClassMappings.get_vo_mapping_for_ruby_class(class_name)
+          # Retrieve map, which contains scoped attributes and associations
+          map = ClassMappings.get_vo_mapping_for_ruby_class(class_name)
 
-        # Merge any associations from mapping.
-        include_associations ||= []
-        if map[:include]
-          include_associations |= map[:include]
-        elsif self.is_a?(ActiveRecord::Base) && ClassMappings.check_for_associations
-          check_for_associations(include_associations) #Add eager loaded associations not included yet
+          # Add any associations from mapping.
+          if map[:include]
+            include_associations = map[:include]
+          elsif self.is_a?(ActiveRecord::Base) && ClassMappings.check_for_associations
+            include_associations = []
+            check_for_associations(include_associations) #Include eager loaded associations
+          end
+
+          # Use local options for serializable_hash that don't pass to associations in serializable_add_includes
+          # since they only apply to this object.
+          local_options = {}
+
+          # Add any methods from mapping.
+          local_options[:methods] = map[:methods]
+
+          # Add mapped included attributes.
+          local_options[:only] = map[:only]
+
+          # Add mapped excluded attributes.
+          local_options[:except] = map[:except]
+
+          mapped = true
         end
+      end
 
-        # Modify local options so that only originally specified options pass to associations in
-        # serializable_add_includes, while modified mapped options pass to serializable_hash.
-        local_options = options.dup || {}
-
-        # Merge any methods from mapping.
-        if map[:methods]
-          local_options[:methods] ||= []
-          local_options[:methods] |= map[:methods]
-        end
-
-        # Merge mapped included attributes.
-        if map[:only]
-          local_options[:only] ||= []
-          local_options[:only] |= map[:only]
-        end
-
-        # Merge mapped excluded attributes.
-        if map[:except]
-          local_options[:except] ||= []
-          local_options[:except] |= map[:except]
-        end
-
-      else
+      # If not mapped, we need to set local options to initial options and still check for associations.
+      unless mapped
         local_options = options
         if self.is_a?(ActiveRecord::Base) && ClassMappings.check_for_associations
           include_associations ||= []
-          check_for_associations(include_associations) #Add eager loaded associations not included yet
+          check_for_associations(include_associations) #Include eager loaded associations
         end
       end
 
       # Create props hash and serialize relations if supported method available. Handles all attributes and methods.
       props = serializable_hash(local_options)
 
-      # Translate case
+      # Translate case on properties. Use to_s in case :methods are specified which can be symbols and return as such.
+      # All other attribute keys are returned as strings already. A faster option may be to collect methods as strings
+      # before passing them to serializable_hash.
       props = props.keys.inject({}) do |camel_cased_props, key|
-        camel_cased_props[key.to_s.dup.to_camel!] = props[key] # Need to do this in case key is frozen
+        camel_cased_props[key.to_s.dup.to_camel!] = props[key] # Need dup in case key is frozen.
         camel_cased_props
       end if ClassMappings.translate_case
 
       # Process associations and translate case
-      if !include_associations.empty?
+      if include_associations
         options[:include] = include_associations
         send(:serializable_add_includes, options) do |association, records, opts|
           props[ClassMappings.translate_case ? association.to_s.dup.to_camel! : association] = records.is_a?(Enumerable) ? records.map { |r| r.to_amf(opts) } : records.to_amf(opts)
@@ -97,11 +98,13 @@ module Rails3AMF
     def check_for_associations(include_associations)
       return if (reflections = self.class.reflections).empty?
 
-      # Add any association instances not in include_associations
+      # Add any association instances not in include_associations. Optional approach is to get all reflection
+      # names and merge them with include_associations, but I suspect this is faster.
       reflections.each do |reflection|
         name = reflection[0]
         include_associations << name if self.instance_variable_get("@#{name}") && !include_associations.include?(name)
       end
+      include_associations = nil if include_associations.empty?
     end
   end
 end
