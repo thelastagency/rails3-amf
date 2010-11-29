@@ -17,9 +17,12 @@ module ActionController
 
     add :amf do |amf, options|
       @amf_response = if amf.respond_to?(:to_amf)
+        # Sets scope in the map
         RubyAMF::Configuration::ClassMappings.current_mapping_scope = options[:class_mapping_scope]||RubyAMF::Configuration::ClassMappings.default_mapping_scope
-        amf.to_amf(options)
-      else
+        amf.to_amf(options) # This enables using options directly in the render block instead of calling @user.to_amf(options) in the block. This conforms to to_xml and to_json rendering functionality.
+      elsif amf.is_a?(FaultObject) # Allows rendering legacy FaultObject
+        amf.error_message request
+       else
         amf
       end
       self.content_type ||= Mime::AMF
