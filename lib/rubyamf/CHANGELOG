@@ -28,16 +28,13 @@
     - Added new mapping options including:
         1. :as as a valid option for mapping the actionscript class instead of :actionscript for RocketAMF
            compatibility.
-        2. :populator to specify a custom populator to load for deserializing custom classes.
-    - Ability to register class mappings in the model and load them using ClassMappings.register_by_class_names.
-    - Added scoped Rails 3 serialization options :only, :except and :include as alternatives to :attributes and
-      :associations in maps.
+        2. :include for Rails 3+ as an option to :associations, with scope.
+        3. :only for Rails 3+ as an option to :attributes, with scope.
+        4. :except for Rails 3+ as a new feature, with scope.
+    - Ability to register class mappings in the model and load them using ClassMappings.register_by_class_names, or
+      completely automatic loading if assume_types is true and ruby class name is the same as actionscript class name.
 
-* Opened ActiveRecord::Base and ActiveResource::Base to add a register_amf class method that allows all mappings
-  to be implemented in the model instead of rubyamf_config.rb. Custom ruby classes can extend
-  RubyAMF::Configuration::Registration to utilize this functionality as well.
-
-* Created rails3_configuration.rb which opens the legacy RubyAMF::Configuration::ClassMappings class:
+* Created extended configuration.rb which opens the legacy RubyAMF::Configuration::ClassMappings class:
     - Updated the register method to register mappings in RocketAMF so that deserialization utilizes default
       RocketAMF functionality.
         1. Allows using rubyamf_config.rb to register RocketAMF mappings.
@@ -52,8 +49,14 @@
 * Created RubyAMF::Populators::ActiveResourcePopulator that contains functionality to both deserialize and serialize
   ActiveResource objects using legacy RubyAMF functionality and mapping.
 
+* Created Serialization module that is included in ActiveModel::Serialization that custom configures each class
+  for fastest serialization. This completely replaces rails3-amf/serialization.rb.
+
 * Created FaultObject utility class.
 
 * Created array_collection_serialiser which overrides RocketAMF::Serializer.write_array so that if use_array_collections
   is true in the mappings all arrays serialize as ArrayCollections. It is only loaded if use_array_collections is true
   so there is no impact on default RocketAMF serialization performance.
+
+* Extended RocketAMF::ClassMapper to have the ability to clear the mapping for a model which is used to clear mappings
+  in development and testing environments for in-class mapping.
