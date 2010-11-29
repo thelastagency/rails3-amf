@@ -45,7 +45,7 @@ module RubyAMF
     # => Class Mapping Definitions
     # A Class Mapping definition conists of at least these two properties:
     # :actionscript   # The incoming action script class to watch for
-    # :as             # The incoming action script class to watch for (alternate to :actionscript)
+    # :as             # The incoming action script class to watch for (alternate for :actionscript)
     # :ruby           # The ruby class to turn it into
     #
     # => Optional value object properties:
@@ -89,33 +89,40 @@ module RubyAMF
     # it will not have a scope to use and will not add any attributes or associations (whichever it cant match) to that association.
     # ClassMappings.default_mapping_scope = :viewing
     #
-    # You can place mappings in a model as follows (if you do, don't map them here):
+    # You can place mappings in a model (if you do, don't map them here) as follows:
     #
     # class MyModel < ActiveRecord::Base
-    #
     #   register_amf :actionscript => 'User',
-    #                :ruby => 'User',
     #                :type => 'active_record',
     #                :associations=> ["addresses", "credit_cards"],
     #                :methods => ["friends"]
     # end
     #
-    # Now, to register these classes you simply reference them in an array using the fully qualified path name of the
-    # ruby class:
+    # Note that you do not need to specify the :ruby option with in-class mapping. Also, if ClassMappings.assume_types
+    # is true, you do not have to specify the :as or :actionscript option as they will default to the ruby class name:
+    #
+    # class MyModel < ActiveRecord::Base
+    #   register_amf :associations=> ["addresses", "credit_cards"],
+    #                :methods => ["friends"]
+    # end
+    #
+    # If not using assume_types or the actionscript remote alias is different from the ruby class name, to register
+    # in-class mappings you simply list the fully qualified path name of the ruby class as follows:
     #
     # ClassMappings.register_by_class_names(["User", "MyPackage::MyClass"])
     #
-    # To use rubyamf_mapping in a custom class, you must extend it as follows.
+    # To use mapping in a custom class, you just extend it as follows (see RubyAMF::Serialization for more information):
     #
     # class MyRubyModel
     #   extend RubyAMF::Configuration::Registration
-    #   include RubyAMF::Serialization (Rails 3+)
+    #   include ActiveModel::Serialization
     #
     #   register_amf :actionscript => 'User',
-    #                :ruby => 'User',
-    #                :type => 'active_record',
     #                :attributes => ["address", "credit_card"],
     #                :methods => ["friends"]
+    #
+    #   def to_amf (only define this if serializable_hash is not sufficient to deserialize the custom class)
+    #
     #   end
     # end
 
