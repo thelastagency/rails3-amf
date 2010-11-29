@@ -8,6 +8,4 @@
 
 * Implement use_ruby_datetime mapping.
 
-* Implement legacy parameter mapping to params hash.
-
 * Error handling combined?

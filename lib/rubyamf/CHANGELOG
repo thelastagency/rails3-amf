@@ -13,6 +13,7 @@
 * Modified rails3-amf/action_controller.rb to pass rendering options to to_amf method.
     - Allows for both legacy RubyAMF :class_mapping_scope to be set as an option as well as allowing for passing
       RocketAMF rendering options without directly calling to_amf on the rendered object in the render block.
+    - Added legacy attributes and credential method placeholders (not functioning).
 
 * Modified rails3-amf/railties.rb to load RubyAMF legacy mapping and ../config/rubyamf_config.rb and to override
   RocketAMF::Serializer.write_array if ClassMapping.use_array_collection = true and mapped a Rails 3 version of
@@ -60,3 +61,8 @@
 
 * Extended RocketAMF::ClassMapper to have the ability to clear the mapping for a model which is used to clear mappings
   in development and testing environments for in-class mapping.
+
+* Modifed Rails3AMF::RequestProcessor to add parameters to params hash in legacy fashion and to set is_amf for
+  controllers.
+
+* Modified Rails3AMF::RequestParser to include placeholders for Credential functionality.
