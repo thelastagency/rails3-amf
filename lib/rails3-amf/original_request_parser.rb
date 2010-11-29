@@ -1,10 +1,5 @@
-require 'rubyamf/app/request_store'
-
 module Rails3AMF
   class RequestParser
-    include RubyAMF::App
-    include RubyAMF::Configuration
-
     def initialize app, config={}, logger=nil
       @app = app
       @config = config
@@ -22,21 +17,6 @@ module Rails3AMF
       env['rack.input'].rewind
       env['rails3amf.request'] = RocketAMF::Envelope.new.populate_from_stream(env['rack.input'].read)
       env['rails3amf.response'] = RocketAMF::Envelope.new
-
-      # Needs to be implemented
-#      RequestStore.auth_header = nil # Aryk: why do we need to rescue this?
-#      if (auth_header = amfobj.get_header_by_key('Credentials'))
-#        RequestStore.auth_header = auth_header #store the auth header for later
-#        case ClassMappings.hash_key_access
-#          when :string then
-#            auth = {'username' => auth_header.value['userid'], 'password' => auth_header.value['password']}
-#          when :symbol then
-#            auth = {:username => auth_header.value['userid'], :password => auth_header.value['password']}
-#          when :indifferent then
-#            auth = HashWithIndifferentAccess.new({:username => auth_header.value['userid'], :password => auth_header.value['password']})
-#        end
-#        RequestStore.rails_authentication = auth
-#      end
 
       # Pass up the chain to the request processor, or whatever is layered in between
       result = @app.call(env)
