@@ -183,8 +183,8 @@ module RubyAMF
         # a slight performance kick by using an if statement to check if :only specified vs. :exclude, but could run in
         # to scoping issues where some scope excludes some included attribute. Also, would be easy to add scoping
         # to methods, but at the cost of an extra set of steps below and I am not sure of the benefit at the
-        # expense.
-        def get_vo_mapping_for_ruby_class(ruby_class)
+        # expense. This does not override get_vo_mapping_for_ruby_class so that method still works.
+        def get_serialization_mapping_for_ruby_class(ruby_class)
           return unless scoped_class_mapping = @scoped_class_mappings_by_ruby_class[ruby_class] # just in case they didnt specify a ClassMapping for this Ruby Class
           scoped_class_mapping[@current_mapping_scope] ||= (if vo_mapping = @class_mappings_by_ruby_class[ruby_class]
               vo_mapping = vo_mapping.dup # need to duplicate it or else we will overwrite the keys from the original mappings

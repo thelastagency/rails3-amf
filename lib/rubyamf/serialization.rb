@@ -167,7 +167,7 @@ module RubyAMF
             if ClassMappings.use_mapped_serialization_for_ruby_class(class_name = self.class.name) && !(options[:only] || options[:except] || options[:methods])
 
               # Retrieve map, which contains scoped attributes and associations
-              map = ClassMappings.get_vo_mapping_for_ruby_class(class_name)
+              map = ClassMappings.get_serialization_mapping_for_ruby_class(class_name)
 
               # Clone the options so the modified options do not pass to associations being serialized
               serialize_mapped_properties(map, options.clone, include_associations, options)
