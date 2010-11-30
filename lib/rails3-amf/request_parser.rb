@@ -23,6 +23,10 @@ module Rails3AMF
       env['rails3amf.request'] = RocketAMF::Envelope.new.populate_from_stream(env['rack.input'].read)
       env['rails3amf.response'] = RocketAMF::Envelope.new
 
+      # Store the request and response for reference
+      RubyAMF::App::RequestStore.rails_request = env['rails3amf.request']
+      RubyAMF::App::RequestStore.rails_response = env['rails3amf.response']
+
       # Needs to be implemented
 #      RequestStore.auth_header = nil # Aryk: why do we need to rescue this?
 #      if (auth_header = amfobj.get_header_by_key('Credentials'))

@@ -1,14 +1,15 @@
 require 'rocketamf/values/messages'
 require 'rubyamf/app/fault_object'
+require 'rubyamf/app/request_store'
 
 # This is the Rails 3+ version of the legacy FaultObject. Pretty much a HACK
 FaultObject.class_eval do
 
   # Returns a RocketAMF::Values::ErrorMessage with the same values.
-  def error_message request
+  def error_message
 
     # Get the remoting message from the request
-    request.env['rails3amf.request'].messages.each do |m|
+    RubyAMF::App::RequestStore.rails_request.messages.each do |m|
       @remoting_message = m.data if m.data.is_a?(RocketAMF::Values::RemotingMessage)
     end
 

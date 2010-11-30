@@ -55,10 +55,10 @@ module ActionController
       @amf_response = if amf.respond_to?(:to_amf)
         # Sets scope in the map
         RubyAMF::Configuration::ClassMappings.current_mapping_scope = options[:class_mapping_scope]||RubyAMF::Configuration::ClassMappings.default_mapping_scope
-        amf.to_amf(options) # This enables using options directly in the render block instead of calling @user.to_amf(options) in the block. This conforms to to_xml and to_json rendering functionality.
+        amf.to_amf(options) # This enables using options directly in the render block instead of calling @user.to_amf(options) in the block. This conforms to to_xml and to_json rendering syntax.
 
       elsif amf.class.to_s == 'FaultObject' #catch returned FaultObjects - use this check so we don't have to include the fault object module
-        amf.error_message request
+        amf.error_message
        else
         amf
       end
