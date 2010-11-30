@@ -66,7 +66,6 @@ module Rails3AMF
         #One last update of the parameters hash, this will map custom mappings to the hash, and will override any conflicting from above
         ParameterMappings.update_request_parameters(controller_name, method_name, req_params, rubyamf_params, amf_body_value)
       rescue Exception => e
-        # raise RUBYAMFException.new(RUBYAMFException.PARAMETER_MAPPING_ERROR, "There was an error with your parameter mappings: {#{e.message}}")
         raise "There was an error with your parameter mappings: {#{e.message}}"
       end
 
@@ -76,7 +75,7 @@ module Rails3AMF
 
       built_params = build_params(controller_name, method_name, args)
 
-      rubyamf_params.merge!( built_params )
+      rubyamf_params.merge!(built_params)
 
       req.params.merge!(built_params)
 

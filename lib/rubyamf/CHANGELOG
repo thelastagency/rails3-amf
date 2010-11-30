@@ -36,26 +36,20 @@
       completely automatic loading if assume_types is true and ruby class name is the same as actionscript class name.
 
 * Created extended configuration.rb which opens the legacy RubyAMF::Configuration::ClassMappings class:
-    - Updated the register method to register mappings in RocketAMF so that deserialization utilizes default
+    - Updated the register method to register mappings in RocketAMF so that de-serialization utilizes default
       RocketAMF functionality.
         1. Allows using rubyamf_config.rb to register RocketAMF mappings.
-        2. Adds populators to RocketAMF::ClassMapper.object_populators that utilize RubyAMF mappings to deserialize
-           ActiveRecord, ActiveResource, and custom ruby classes that map a custom polulator and extend
-           RubyAMF::Configuration::Registration.
     - Added register_by_class_names method to load registrations in mapping.
 
-* Created RubyAMF::Populators::ActiveRecordPopulator that contains functionality to both deserialize and serialize
-  ActiveRecord objects using legacy RubyAMF functionality and mapping.
-
-* Created RubyAMF::Populators::ActiveResourcePopulator that contains functionality to both deserialize and serialize
-  ActiveResource objects using legacy RubyAMF functionality and mapping.
+* Created Deserialization module that hooks into based RocketAMF de-serialization functionality.
+    - Adds "rubyamf_populate" to classes to update objects with de-serialized properties.
 
 * Created Serialization module that is included in ActiveModel::Serialization that custom configures each class
   for fastest serialization. This completely replaces rails3-amf/serialization.rb.
 
-* Created FaultObject utility class.
+* Created FaultObject utility class to return RocketAMF::Values::ErrorMessage
 
-* Created array_collection_serialiser which overrides RocketAMF::Serializer.write_array so that if use_array_collections
+* Created array_collection_serializer which overrides RocketAMF::Serializer.write_array so that if use_array_collections
   is true in the mappings all arrays serialize as ArrayCollections. It is only loaded if use_array_collections is true
   so there is no impact on default RocketAMF serialization performance.
 

@@ -9,7 +9,7 @@ require 'rocketamf/pure/serializer'
 require 'rocketamf/pure/deserializer'
 
 # The only modifications to the original configuration.rb file was to do version checking on require and include
-# statements which you can find by searching on fosrias in legacy_configuration.rb, which is the original
+# statements which you can find by searching on fosrias in app/configuration.rb, which is the original
 # configuration file. Any other references to fosrias are previous patch tags in the file.
 module RubyAMF
   module Configuration
@@ -62,7 +62,7 @@ module RubyAMF
           end
         end
 
-        #Overrides legacy register to synchronize mapping with RocketAMF
+        #Overrides legacy register to synchronize mapping with RocketAMF and add new mapping options
         def register(mapping)
 
           # Allow RocketAMF mapping symbols
@@ -131,24 +131,27 @@ module RubyAMF
           end
         end
 
-        # Registers mappings for each class.
+        # Registers mappings for each class. This is necessary if not using assume_types since regitration
+        # requires loading a class and the may not be straightforward by crawling model classes to get the
+        # correct class name and package structure.
         def register_by_class_names(ruby_class_names)
           ruby_class_names.each do |ruby_class_name|
-            ruby_class = eval(ruby_class_name)
+            ruby_class = eval(ruby_class_name) # Loading the class registers it.
             if !ruby_class
               raise "Attempting to register a ruby class that does not exist: #{ruby_class_name}."
             end
           end
         end
 
-        # Checks if mapping is used on a model. Optimizes deserialization if mapping not used on a particular object.
+        # Checks if mapping is used on a model. Used to optimize deserialization and serialization if mapping not
+        # used on a particular class.
         def use_mapped_serialization_for_ruby_class(ruby_class)
           return unless map = @class_mappings_by_ruby_class[ruby_class]
           map[:use_mapped_serialization]
         end
 
-        # Legacy functionality translated for Rails 3 serializable_hash serialization functionality. This does not
-        # override get_vo_mapping_for_ruby_class so that method still works.
+        # Legacy functionality translated for Rails 3 serializable_hash serialization functionality to return
+        # scoped mappings. This does not override get_vo_mapping_for_ruby_class so that method still works.
         def get_serialization_mapping_for_ruby_class(ruby_class)
           return unless scoped_class_mapping = @scoped_class_mappings_by_ruby_class[ruby_class] # just in case they didnt specify a ClassMapping for this Ruby Class
           scoped_class_mapping[@current_mapping_scope] ||= (if vo_mapping = @class_mappings_by_ruby_class[ruby_class]
