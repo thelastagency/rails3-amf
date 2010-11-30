@@ -15,28 +15,28 @@ module RubyAMF
     include RubyAMF::Configuration
     include RubyAMF::VoHelper
 
-    # Deserializes any class that includes RubyAMF::Deserialization, either directly or indirectly through
-    # ActiveModel::Serialization
+    # Custom populator that is injected into RocketAMF that controls all the mapped deserialization. If
+    # no mapping is configured, it defaults RocketAMF fallback serialization.
     class Populator
 
       def can_handle? obj
-         obj.is_a?(RubyAMF::Deserialization)
+         obj.respond_to?(:rubyamf_populate)
       end
 
       def populate obj, props, dynamic_props
-        obj.populate props, dynamic_props
+        obj.rubyamf_populate props, dynamic_props
       end
     end
 
     # Control the deserialization of the model by specifying the relations, properties,
     # methods, and other data to deserialize with the model.
-    def populate props, dynamic_props
+    def rubyamf_populate props, dynamic_props
       set_props(props, dynamic_props)
       self
     end
 
     private
-    # Sets the attributes of the object
+    # Sets the attributes of the object. This is the RocketAMF fallback code.
     def set_props(props, dynamic_props)
       props.merge! dynamic_props if dynamic_props
       hash_like = self.respond_to?("[]=")
@@ -55,7 +55,7 @@ module RubyAMF
 
       # Automatically sets all the configuration options when included in a class.
       def configure_rubyamf_deserialization
-        if self.ancestors.include?(ActiveRecord::Base)
+        if true || self.ancestors.include?(ActiveRecord::Base) #Currently legacy rubyamf deserialization deserializes all types until.
           self.use_active_record_deserialization
         elsif self.ancestors.include?(ActiveResource::Base)
           self.use_active_resource_deserialization
@@ -67,12 +67,12 @@ module RubyAMF
         # end
       end
 
-      # Updates class to check for eager loaded associations on ActiveRecords
+      # Updates class to deserialize ActiveRecords
       def use_active_record_deserialization
 
         # Activate active record deserialization
         self.class_eval do
-          def populate props, dynamic_props
+          def rubyamf_populate props, dynamic_props
             set_props(props, dynamic_props)
             VoUtil.finalize_object(self)
             self
@@ -87,14 +87,14 @@ module RubyAMF
         end
       end
 
-      # Updates class to check for eager loaded associations on ActiveRecords
+      # Updates class to deserialize ActiveResources
       def use_active_resource_deserialization
         use_active_record_deserialization # Same for now
       end
 
       # Updates class to use case translation
       def use_case_translation
-        if self.ancestors.include?(ActiveRecord::Base) || self.ancestors.include?(ActiveResource::Base) # Same for now
+        if true # self.ancestors.include?(ActiveRecord::Base) || self.ancestors.include?(ActiveResource::Base) Currently all types deserialized using legacy property population.
            self.class_eval do
              def set_props(props, dynamic_props)
                 props.each_pair { |key, value| VoUtil.set_value(self, key.to_s.dup.to_snake!, value) } # need to do it this way because the key might be frozen
@@ -121,12 +121,12 @@ module RubyAMF
 
       # Updates use mapped serialization
       def use_mapped_serialization
-        # Do nothing until implemented
+        # Do nothing until implemented. Handled in legacy rubyamf.
       end
       
       # Updates class to use mapped active record serialization
       def use_mapped_active_record_serialization
-        # Do nothing until implemented
+        # Do nothing until implemented. Handled in legacy rubyamf.
       end
     end
 
@@ -137,16 +137,16 @@ module RubyAMF
         base.configure_rubyamf_deserialization
       else
 
-        # Here we set a mock populate method to update a class if it has not been configured for deserialization.
-        # This makes sure classes in development and testing mode are configured based on the system settings when
-        # the classes reload. Further, any custom class that includes ActiveModel::Serialization gets all the
-        # functionality as well. This only configures a class the first time one of its instances is serialized.
+        # Here we set a mock populate method to update a class if it has not already been configured for
+        # deserialization. This makes sure classes in development and testing mode are configured based on the system
+        # settings when the classes reload. Further, any custom class that includes ActiveModel::Serialization gets all
+        # the functionality as well. This only configures a class the first time one of its instances is serialized.
         base.module_eval do
-          def populate props, dynamic_props
+          def rubyamf_populate props, dynamic_props
             self.class.class_eval do
               include Deserialization
             end
-            self.populate props, dynamic_props
+            self.rubyamf_populate props, dynamic_props
           end
         end
       end
@@ -158,7 +158,8 @@ end
 RocketAMF::ClassMapper.object_populators << RubyAMF::Deserialization::Populator.new
 
 # Hook into any object that includes ActiveModel::Serialization. This is not really the purest way to do things,
-# but it is the simplest to make sure the method populate is an instance method.
+# but it is the simplest to make sure the method populate is an instance method on objects that include
+# ActiveModel::Serialization
 module ActiveModel::Serialization
   include RubyAMF::Deserialization
 end
