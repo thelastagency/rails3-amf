@@ -1,7 +1,7 @@
 require 'rocketamf'
 require 'rails'
 
-#require 'rails3-amf/serialization' fosrias: See rubyamf/serialization
+#require 'rails3-amf/serialization' fosrias: See rubyamf/extensions/serialization
 require 'rails3-amf/action_controller'
 require 'rails3-amf/configuration'
 require 'rails3-amf/request_parser'
@@ -11,7 +11,8 @@ require 'rubyamf/util/string'
 require 'rubyamf/extensions/fault_object'
 require 'rubyamf/extensions/rocketamf'
 require 'rubyamf/extensions/configuration'
-require 'rubyamf/serialization'
+require 'rubyamf/extensions/serialization'
+require 'rubyamf/extensions/deserialization'
 
 module Rails3AMF
   class Railtie < Rails::Railtie

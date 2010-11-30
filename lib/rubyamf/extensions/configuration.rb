@@ -1,8 +1,6 @@
 require 'rubyamf/app/configuration'
-require 'rubyamf/deserialization/populator'
-require 'rubyamf/deserialization/active_record_populator'
-require 'rubyamf/deserialization/active_resource_populator'
-require 'rubyamf/serialization'
+require 'rubyamf/extensions/serialization'
+require 'rubyamf/extensions/deserialization'
 require 'active_record'
 require 'active_resource'
 
@@ -10,15 +8,15 @@ require 'rails3-amf/configuration'
 require 'rocketamf/pure/serializer'
 require 'rocketamf/pure/deserializer'
 
-#The only modifications to the original configuration.rb file was to comment out require and include statements
-#which you can find by searching on fosrias in legacy_configuration.rb, which is the original configuration file. Any
-#other references to fosrias are previous patch tags in the file.
+# The only modifications to the original configuration.rb file was to do version checking on require and include
+# statements which you can find by searching on fosrias in legacy_configuration.rb, which is the original
+# configuration file. Any other references to fosrias are previous patch tags in the file.
 module RubyAMF
   module Configuration
 
     # Module to be included for in-class mapping. In-class mapping registers the first time a class loads and thus
     # is automatically picked up by regular deserialization and also by using assume_types since in either case, the
-    # first step is to create an new object. Thus, the first time the class loads it registers and configures both
+    # first step is to create a new object. Thus, the first time the class loads it registers and configures both
     # deserialization and serialization options.
     module Registration
       def register_amf(mapping)
@@ -38,11 +36,6 @@ module RubyAMF
       end
     end
 
-    # Deserialization flags
-    @has_active_record = false
-    @has_active_resource = false
-    @has_custom = false
-
     # Opens the legacy class to implement Rails 3 and RocketAMF mapping functionality.
     ClassMappings.class_eval do
       extend RubyAMF::Serialization
@@ -57,7 +50,8 @@ module RubyAMF
           Rails3AMF::Configuration.auto_class_mapping = value
         end
 
-        # Clears the mapping for a particular class.
+        # Clears the mapping for a particular class. This is so that mapping changes in development and testing
+        # are properly reset.
         def clear_mapping(ruby_class_name)
           if map = @class_mappings_by_ruby_class.delete(ruby_class_name)
             @scoped_class_mappings_by_ruby_class.delete(ruby_class_name)
@@ -103,7 +97,7 @@ module RubyAMF
           end
 
           # Check if we have set any attributes, associations or methods. If not, we can use faster serialization
-          # by bypassing mapping implementation in serializers
+          # by bypassing mapping implementation in deserializers and serializers
           if mapping[:include] || mapping[:exclude] || mapping[:only] || mapping[:method]
             mapping[:use_mapped_serialization] = true
           else
@@ -118,57 +112,31 @@ module RubyAMF
               m.map :as => mapping[:actionscript] ||= mapping[:as], :ruby => mapping[:ruby]
             end
           else
-            raise "Mapping Error. :ruby and :actionscript or :as must be mapped"
+            raise "Mapping Error. Too many options specified. :ruby and :actionscript or :as must be mapped"
           end
 
-          # Configure deserialization and serialization
-          ruby_class = mapping[:ruby].split('::').inject(Kernel) {|scope, const_name| scope.const_get(const_name)} #eval(mapping[:ruby])
-          has_mapped_serialization = mapping[:use_mapped_serialization]
-
-          # Configure the application's Deserialization and Serialization flags
-          if ruby_class.ancestors.include?(ActiveRecord::Base)
-            populator_class_name = "RubyAMF::Deserialization::ActiveRecordPopulator" unless @has_active_record #Only add the populator once
-            @has_active_record = true
-
-          elsif ruby_class.ancestors.include?(ActiveResource::Base)
-            populator_class_name =  "RubyAMF::Deserialization::ActiveResourcePopulator" unless @has_active_resource #Only add the populator once
-            @has_active_resource = true
-
-          else
-            populator_class_name =  "RubyAMF::Deserialization::Populator" unless @has_custom  #Only add the populator once
-            @has_custom = true
-          end
-
-          # Include serialization methods in the class when it is registered. In production mode, this ensures
-          # all registered classes have their serialization properties set. In development and testing mode,
-          # this also resets serialization for the classes that have in-class mappings. All other classes registered
-          # in rubyamf_config.rb or picked up by assume_types are configured by the serialization included in
-          # RubyAMF::Serialization included in ActiveRecord::Serialization.
+          # Include serialization and deserialization methods in the class when it is registered. In production mode,
+          # this ensures all registered classes have their serialization properties set when the application loads.
+          # In development and testing mode, this also resets serialization for the classes that have in-class mappings.
+          # All other classes registered in rubyamf_config.rb or picked up by assume_types are configured by the
+          # serialization methods included in RubyAMF::Serialization and the deserialization methods included in
+          # RubyAMF::Deserialization, both included in ActiveRecord::Serialization.
+          if ruby_class = eval(mapping[:ruby])
             ruby_class.class_eval do
               include RubyAMF::Serialization
+              include RubyAMF::Deserialization
             end
-
-          # Configure deserialization
-          if populator_class_name
-            populator_class = eval(populator_class_name)
-            populator_class.use_case_translation if translate_case
-            if populator_class
-              if ruby_class.is_a?(ActiveRecord::Base)
-                # Always put active record populator at the top
-                RocketAMF::ClassMapper.object_populators.unshift(populator_class.new)
-              else
-                RocketAMF::ClassMapper.object_populators << populator_class.new
-              end
-            end
+          else
+            raise "Attempting to register a ruby class that does not exist: #{mapping[:ruby]}."
           end
         end
 
         # Registers mappings for each class.
         def register_by_class_names(ruby_class_names)
           ruby_class_names.each do |ruby_class_name|
-            ruby_class = eval(ruby_class_name) #ruby_class_name.split('::').inject(Kernel) {|scope, const_name| scope.const_get(mapping[:ruby])}
+            ruby_class = eval(ruby_class_name)
             if !ruby_class
-              raise "Attempting to register a class that does not exist: #{ruby_class_name}."
+              raise "Attempting to register a ruby class that does not exist: #{ruby_class_name}."
             end
           end
         end
@@ -179,11 +147,8 @@ module RubyAMF
           map[:use_mapped_serialization]
         end
 
-        # Legacy functionality translated for Rails 3 serializable_hash serialization functionality. Might get
-        # a slight performance kick by using an if statement to check if :only specified vs. :exclude, but could run in
-        # to scoping issues where some scope excludes some included attribute. Also, would be easy to add scoping
-        # to methods, but at the cost of an extra set of steps below and I am not sure of the benefit at the
-        # expense. This does not override get_vo_mapping_for_ruby_class so that method still works.
+        # Legacy functionality translated for Rails 3 serializable_hash serialization functionality. This does not
+        # override get_vo_mapping_for_ruby_class so that method still works.
         def get_serialization_mapping_for_ruby_class(ruby_class)
           return unless scoped_class_mapping = @scoped_class_mappings_by_ruby_class[ruby_class] # just in case they didnt specify a ClassMapping for this Ruby Class
           scoped_class_mapping[@current_mapping_scope] ||= (if vo_mapping = @class_mappings_by_ruby_class[ruby_class]
@@ -198,9 +163,8 @@ module RubyAMF
       end
     end
 
+    # This is a bulk copy. The only change is the inclusion for Rails 3+ skipping "@persisted" variables in scaffolding.
     ParameterMappings.class_eval do
-
-      # This is a bulk copy. The only change is the inclusion for Rails 3+ of skipping "@persisted" variables in scaffolding.
       class << self
 
         # remoting_params is expected to be an array of elements. Any hashes should allow indifferent access.
