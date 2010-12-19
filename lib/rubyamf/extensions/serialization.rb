@@ -50,7 +50,7 @@ module RubyAMF
       def configure_rubyamf_serialization
         if is_active_record = self.ancestors.include?(ActiveRecord::Base)
           self.use_active_record_serialization
-          self.use_case_translation(true) if ClassMappings.translate_case # Must set this before configuring check_for_associations
+          self.use_case_translation if ClassMappings.translate_case # Must set this before configuring check_for_associations
           self.use_check_for_associations if ClassMappings.check_for_associations
         else
           self.use_case_translation if ClassMappings.translate_case
